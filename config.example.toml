@@ -1,0 +1,17 @@
+[position]
+anchor = "top-right"
+x = 0
+y = 0
+
+[images]
+odd = "images/odd.png"
+even = "images/even.png"
+width = 400
+height = 250
+
+[images.keys]
+KEY_ENTER = "images/enter.png"
+KEY_BACKSPACE = "images/neutral.png"
+KEY_SPACE = "images/neutral.png"
+"Shift+KEY_1" = "images/exclamation.png"
+"Shift+KEY_SLASH" = "images/question.png"
