@@ -12,6 +12,7 @@ use crate::{config::Images, keys::KeyChord};
 pub struct PetImages {
     odd: Arc<RenderImage>,
     even: Arc<RenderImage>,
+    neutral: Arc<RenderImage>,
     keys: HashMap<KeyChord, Arc<RenderImage>>,
 }
 
@@ -44,12 +45,26 @@ impl PetImages {
         };
         let odd = load(&config.odd)?;
         let even = load(&config.even)?;
+        let neutral = load(&config.neutral)?;
         let keys = config
             .keys
             .iter()
             .map(|(key, path)| Ok((*key, load(path)?)))
             .collect::<Result<_>>()?;
-        Ok(Self { odd, even, keys })
+        Ok(Self {
+            odd,
+            even,
+            neutral,
+            keys,
+        })
+    }
+
+    pub fn neutral(&self) -> Arc<RenderImage> {
+        self.neutral.clone()
+    }
+
+    pub fn reacts_to(&self, key: KeyChord) -> bool {
+        self.keys.contains_key(&key) || key.is_typing()
     }
 
     pub fn select(&self, key: Option<KeyChord>, odd: bool) -> Arc<RenderImage> {

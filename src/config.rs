@@ -50,6 +50,7 @@ pub enum Corner {
 pub struct Images {
     pub odd: PathBuf,
     pub even: PathBuf,
+    pub neutral: PathBuf,
     #[serde(default = "default_size")]
     pub width: u16,
     #[serde(default = "default_size")]
@@ -100,9 +101,13 @@ impl Config {
             (1..=4096).contains(&config.images.height),
             "images.height must be between 1 and 4096"
         );
-        for path in [&mut config.images.odd, &mut config.images.even]
-            .into_iter()
-            .chain(config.images.keys.values_mut())
+        for path in [
+            &mut config.images.odd,
+            &mut config.images.even,
+            &mut config.images.neutral,
+        ]
+        .into_iter()
+        .chain(config.images.keys.values_mut())
         {
             ensure!(
                 !path.as_os_str().is_empty(),

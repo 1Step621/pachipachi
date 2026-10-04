@@ -47,6 +47,92 @@ pub struct KeyChord {
 }
 
 impl KeyChord {
+    pub fn is_typing(self) -> bool {
+        if self.modifiers.0 & (Modifier::Ctrl as u8 | Modifier::Alt as u8 | Modifier::Super as u8)
+            != 0
+        {
+            return false;
+        }
+        // Accept physical text/editing keys. Navigation, mode switches, and function keys
+        // remain available as explicit image bindings, but don't count as typing by default.
+        matches!(
+            self.key,
+            KeyCode::KEY_A
+                | KeyCode::KEY_B
+                | KeyCode::KEY_C
+                | KeyCode::KEY_D
+                | KeyCode::KEY_E
+                | KeyCode::KEY_F
+                | KeyCode::KEY_G
+                | KeyCode::KEY_H
+                | KeyCode::KEY_I
+                | KeyCode::KEY_J
+                | KeyCode::KEY_K
+                | KeyCode::KEY_L
+                | KeyCode::KEY_M
+                | KeyCode::KEY_N
+                | KeyCode::KEY_O
+                | KeyCode::KEY_P
+                | KeyCode::KEY_Q
+                | KeyCode::KEY_R
+                | KeyCode::KEY_S
+                | KeyCode::KEY_T
+                | KeyCode::KEY_U
+                | KeyCode::KEY_V
+                | KeyCode::KEY_W
+                | KeyCode::KEY_X
+                | KeyCode::KEY_Y
+                | KeyCode::KEY_Z
+                | KeyCode::KEY_0
+                | KeyCode::KEY_1
+                | KeyCode::KEY_2
+                | KeyCode::KEY_3
+                | KeyCode::KEY_4
+                | KeyCode::KEY_5
+                | KeyCode::KEY_6
+                | KeyCode::KEY_7
+                | KeyCode::KEY_8
+                | KeyCode::KEY_9
+                | KeyCode::KEY_MINUS
+                | KeyCode::KEY_EQUAL
+                | KeyCode::KEY_LEFTBRACE
+                | KeyCode::KEY_RIGHTBRACE
+                | KeyCode::KEY_SEMICOLON
+                | KeyCode::KEY_APOSTROPHE
+                | KeyCode::KEY_GRAVE
+                | KeyCode::KEY_BACKSLASH
+                | KeyCode::KEY_COMMA
+                | KeyCode::KEY_DOT
+                | KeyCode::KEY_SLASH
+                | KeyCode::KEY_102ND
+                | KeyCode::KEY_RO
+                | KeyCode::KEY_YEN
+                | KeyCode::KEY_SPACE
+                | KeyCode::KEY_ENTER
+                | KeyCode::KEY_BACKSPACE
+                | KeyCode::KEY_DELETE
+                | KeyCode::KEY_KP0
+                | KeyCode::KEY_KP1
+                | KeyCode::KEY_KP2
+                | KeyCode::KEY_KP3
+                | KeyCode::KEY_KP4
+                | KeyCode::KEY_KP5
+                | KeyCode::KEY_KP6
+                | KeyCode::KEY_KP7
+                | KeyCode::KEY_KP8
+                | KeyCode::KEY_KP9
+                | KeyCode::KEY_KPPLUS
+                | KeyCode::KEY_KPMINUS
+                | KeyCode::KEY_KPASTERISK
+                | KeyCode::KEY_KPSLASH
+                | KeyCode::KEY_KPDOT
+                | KeyCode::KEY_KPCOMMA
+                | KeyCode::KEY_KPEQUAL
+                | KeyCode::KEY_KPENTER
+                | KeyCode::KEY_KPPLUSMINUS
+        )
+    }
+
     pub fn unmodified(key: KeyCode) -> Self {
         Self {
             key,

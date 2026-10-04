@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 
 pub const BOUNCE_HEIGHT: f32 = 6.0;
+pub const NEUTRAL_DURATION: Duration = Duration::from_millis(500);
 pub const VISIBLE_DURATION: Duration = Duration::from_secs(2);
 const FADE_DURATION: Duration = Duration::from_millis(300);
 const RISE: Duration = Duration::from_millis(35);
@@ -13,6 +14,11 @@ pub struct TypingState {
 }
 
 impl TypingState {
+    pub fn is_idle(&self, now: Instant) -> bool {
+        self.bounce
+            .is_none_or(|(started, _)| now.saturating_duration_since(started) >= NEUTRAL_DURATION)
+    }
+
     pub fn press(&mut self, now: Instant) {
         self.odd = !self.odd;
         // Repeated presses start from the current height and never accumulate displacement.

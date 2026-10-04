@@ -18,7 +18,7 @@ use gpui::{
 };
 
 use crate::{
-    animation::{BOUNCE_HEIGHT, TypingState, VISIBLE_DURATION},
+    animation::{BOUNCE_HEIGHT, NEUTRAL_DURATION, TypingState, VISIBLE_DURATION},
     config::{Config, Corner},
     images::PetImages,
     keys::KeyChord,
@@ -41,7 +41,7 @@ impl Pet {
         receiver: Option<Receiver<KeyChord>>,
         cx: &mut Context<Self>,
     ) -> Self {
-        let current = images.select(None, false);
+        let current = images.neutral();
         cx.spawn(async move |this, cx| {
             if let Some(receiver) = receiver {
                 while let Ok(key) = receiver.recv().await {
@@ -56,6 +56,10 @@ impl Pet {
                     KeyChord::unmodified(KeyCode::KEY_ENTER),
                     KeyChord::unmodified(KeyCode::KEY_SPACE),
                     "Shift+KEY_1".parse().expect("valid demo chord"),
+                    KeyChord::unmodified(KeyCode::KEY_HENKAN),
+                    KeyChord::unmodified(KeyCode::KEY_ESC),
+                    KeyChord::unmodified(KeyCode::KEY_F1),
+                    "Ctrl+KEY_C".parse().expect("valid demo chord"),
                 ];
                 let mut index = 0;
                 loop {
@@ -86,11 +90,23 @@ impl Pet {
     }
 
     fn press(&mut self, key: KeyChord, cx: &mut Context<Self>) {
-        self.state.press(Instant::now());
+        if !self.images.reacts_to(key) {
+            return;
+        }
+        let now = Instant::now();
+        self.state.press(now);
         self.current = self.images.select(Some(key), self.state.odd);
-        // Dropping the previous task cancels its timer, so earlier presses cannot start a fade.
+        // Cancelling the previous task prevents stale neutral/fade timers after a new press.
         self.hide_task = Some(cx.spawn(async move |this, cx| {
-            cx.background_executor().timer(VISIBLE_DURATION).await;
+            cx.background_executor()
+                .timer((now + NEUTRAL_DURATION).saturating_duration_since(Instant::now()))
+                .await;
+            if this.update(cx, |_, cx| cx.notify()).is_err() {
+                return;
+            }
+            cx.background_executor()
+                .timer((now + VISIBLE_DURATION).saturating_duration_since(Instant::now()))
+                .await;
             let _ = this.update(cx, |_, cx| cx.notify());
         }));
         cx.notify();
@@ -103,12 +119,17 @@ impl Render for Pet {
         if self.state.is_animating(now) {
             window.request_animation_frame();
         }
+        let current = if self.state.is_idle(now) {
+            self.images.neutral()
+        } else {
+            self.current.clone()
+        };
         div()
             .relative()
             .size_full()
             .when(self.state.is_visible(now), |root| {
                 root.child(
-                    img(self.current.clone())
+                    img(current)
                         .absolute()
                         .left(px(0.0))
                         .top(px(BOUNCE_HEIGHT - self.state.height(now)))
