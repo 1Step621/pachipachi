@@ -1,5 +1,6 @@
 use std::{
     cell::RefCell,
+    collections::VecDeque,
     rc::Rc,
     sync::Arc,
     time::{Duration, Instant},
@@ -31,6 +32,33 @@ struct Pet {
     width: f32,
     height: f32,
     hide_task: Option<Task<()>>,
+    pending_keys: PendingKeys,
+}
+
+#[derive(Default)]
+struct PendingKeys {
+    keys: VecDeque<KeyChord>,
+    waiting_for_frame: bool,
+}
+
+impl PendingKeys {
+    fn push(&mut self, key: KeyChord) {
+        self.keys.push_back(key);
+    }
+
+    fn next(&mut self) -> Option<KeyChord> {
+        if self.waiting_for_frame {
+            return None;
+        }
+        let key = self.keys.pop_front()?;
+        self.waiting_for_frame = true;
+        Some(key)
+    }
+
+    fn frame_presented(&mut self) -> bool {
+        self.waiting_for_frame = false;
+        !self.keys.is_empty()
+    }
 }
 
 impl Pet {
@@ -86,6 +114,7 @@ impl Pet {
             width,
             height,
             hide_task: None,
+            pending_keys: PendingKeys::default(),
         }
     }
 
@@ -93,6 +122,11 @@ impl Pet {
         if !self.images.reacts_to(key) {
             return;
         }
+        self.pending_keys.push(key);
+        cx.notify();
+    }
+
+    fn show_key(&mut self, key: KeyChord, cx: &mut Context<Self>) {
         let now = Instant::now();
         self.state.press(now);
         self.current = self.images.select(Some(key), self.state.odd);
@@ -109,12 +143,24 @@ impl Pet {
                 .await;
             let _ = this.update(cx, |_, cx| cx.notify());
         }));
-        cx.notify();
     }
 }
 
 impl Render for Pet {
-    fn render(&mut self, window: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if let Some(key) = self.pending_keys.next() {
+            self.show_key(key, cx);
+            // Each press must reach a frame before the next press can change the image.
+            // Otherwise an even-sized burst toggles odd/even back to the same image.
+            let this = cx.entity().downgrade();
+            window.on_next_frame(move |_, cx| {
+                let _ = this.update(cx, |pet, cx| {
+                    if pet.pending_keys.frame_presented() {
+                        cx.notify();
+                    }
+                });
+            });
+        }
         let now = Instant::now();
         if self.state.is_animating(now) {
             window.request_animation_frame();
